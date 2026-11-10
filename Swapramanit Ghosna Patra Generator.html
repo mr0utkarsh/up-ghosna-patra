@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>स्वप्रमाणित घोषणा-पत्र | UP eDistrict Form Generator</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- html2pdf.js for PDF Generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Mukta:wght@400;500;600;700&display=swap');
+        
+        body {
+            /* Mukta is an excellent font for Hindi typography, falling back to system default */
+            font-family: 'Mukta', system-ui, -apple-system, sans-serif; 
+        }
+
+        /* Subtle background pattern for the preview pane area */
+        .bg-pattern {
+            background-color: #f3f4f6;
+            background-image: radial-gradient(#d1d5db 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+
+        /* =======================================================================
+           Container Query Magic: 
+           This ensures the A4 preview scales perfectly on mobile while 
+           keeping text and margins proportional to the aspect ratio. 
+           ======================================================================= */
+        .a4-wrapper {
+            container-type: inline-size;
+            width: 100%;
+            max-width: 794px; /* Standard A4 width at 96 DPI */
+            aspect-ratio: 210 / 297; /* Exact A4 aspect ratio */
+            background: white;
+            margin: 0 auto;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Scaled padding, text sizes, and margins using cqw (Container Query Width) */
+        .s-padding { padding: 8cqw 8cqw; }
+        .s-text-sm { font-size: 1.8cqw; }
+        .s-text-base { font-size: 2.3cqw; }
+        .s-text-title { font-size: 3cqw; font-weight: 700; text-decoration: underline; text-underline-offset: 0.5cqw; }
+        .s-line-height { line-height: 2.3; }
+        
+        .s-mb-8 { margin-bottom: 6cqw; }
+        .s-mt-12 { margin-top: 10cqw; }
+        .s-mt-2 { margin-top: 1.5cqw; }
+        .s-gap-4 { gap: 3cqw; }
+
+        /* Footer Signature Box Container */
+        .s-sign-box { 
+            height: 8cqw; 
+            min-width: 25cqw; 
+            border-bottom: 1.5px solid #000; 
+            display: flex; 
+            align-items: flex-end; 
+            justify-content: center; 
+            padding-bottom: 0.5cqw; 
+            position: relative;
+        }
+        .s-sign-img { 
+            max-height: 7cqw; 
+            object-fit: contain; 
+        }
+
+        /* Fill-in-the-blank Styling */
+        .blank-line {
+            display: inline-block;
+            border-bottom: 1.5px dashed #4b5563; /* Dashed line creates a genuine form look */
+            min-height: 1.2em;
+            vertical-align: bottom;
+            text-align: center;
+            padding: 0 0.5cqw;
+            font-weight: 600;
+            color: #1e40af; /* Dark blue ink aesthetic */
+            line-height: 1.2;
+            word-break: break-word;
+        }
+
+        /* Minimum widths for each specific blank */
+        .mw-name { min-width: 18cqw; }
+        .mw-father { min-width: 25cqw; }
+        .mw-age { min-width: 7cqw; }
+        .mw-occ { min-width: 15cqw; }
+        .mw-addr { min-width: 32cqw; }
+        .mw-place { min-width: 18cqw; }
+
+        /* Clean Scrollbars */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 antialiased min-h-screen flex flex-col lg:flex-row overflow-hidden">
+
+    <!-- LEFT COLUMN: Input Form -->
+    <div class="w-full lg:w-4/12 xl:w-3/12 bg-white flex flex-col shadow-xl z-10 border-r border-gray-200 h-screen overflow-y-auto no-scrollbar">
+        <div class="p-6 lg:p-8 flex-grow">
+            
+            <!-- Header -->
+            <div class="flex flex-col mb-8 border-b border-gray-100 pb-4">
+                <h1 class="text-2xl font-bold text-gray-900 leading-tight">घोषणा-पत्र जनरेटर</h1>
+                <p class="text-sm text-gray-500 mt-1">UP eDistrict Self Declaration</p>
+            </div>
+
+            <!-- Form Fields -->
+            <div class="flex flex-col space-y-5">
+                
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">आवेदक का नाम (Name)</label>
+                    <input type="text" id="applicantName" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none" placeholder="उदा. राम कुमार">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">पिता/पति का नाम (Father/Husband Name)</label>
+                    <input type="text" id="fatherName" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none" placeholder="उदा. श्याम सिंह">
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1.5">उम्र (Age)</label>
+                        <input type="number" id="age" min="1" max="120" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none" placeholder="उदा. 35">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1.5">व्यवसाय (Occupation)</label>
+                        <input type="text" id="occupation" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none" placeholder="उदा. कृषि">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">निवासी (Address)</label>
+                    <textarea id="address" rows="2" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none resize-none" placeholder="पूरा पता लिखें"></textarea>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1.5">स्थान (Place)</label>
+                        <input type="text" id="place" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none" placeholder="उदा. कानपुर">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1.5">दिनाँक (Date)</label>
+                        <input type="date" id="date" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none text-gray-700">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">हस्ताक्षर (Signature Image) <span class="text-gray-400 font-normal text-xs ml-1">(Optional)</span></label>
+                    <div class="w-full bg-gray-50 border border-dashed border-gray-400 rounded-lg p-4 flex flex-col items-center justify-center hover:bg-gray-100 transition-colors cursor-pointer relative overflow-hidden group">
+                        <svg class="w-6 h-6 text-gray-400 mb-2 group-hover:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                        <span class="text-sm text-gray-500 font-medium group-hover:text-blue-600 transition-colors">Click to upload image</span>
+                        <input type="file" id="signatureFile" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full" />
+                    </div>
+                    <div id="file-name-display" class="text-xs text-green-600 mt-2 hidden font-medium text-center"></div>
+                </div>
+
+            </div>
+            
+            <!-- Download Button -->
+            <button id="download-btn" onclick="downloadPDF()" class="w-full mt-8 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all flex justify-center items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                <span>Download PDF</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- RIGHT COLUMN: Live Document Preview -->
+    <div class="w-full lg:w-8/12 xl:w-9/12 bg-pattern p-4 sm:p-8 lg:p-12 flex justify-center items-start overflow-y-auto no-scrollbar h-screen relative">
+        
+        <!-- A4 Paper Box -->
+        <div id="document-preview-content" class="a4-wrapper shadow-2xl s-padding text-gray-900">
+            
+            <!-- Top Right Header -->
+            <div class="text-right s-text-sm s-mb-8">
+                संख्या- 874/एक-9-2014-रा-9, दिनाँक 16 जून, 2014 का संलग्नक
+            </div>
+            
+            <!-- Document Title -->
+            <div class="text-center s-text-title s-mb-8">
+                स्वप्रमाणित घोषणा-पत्र
+            </div>
+
+            <!-- Body Paragraph with Inline Fillable Blanks -->
+            <div class="text-justify s-text-base s-line-height">
+                मैं <span class="applicantName-preview blank-line mw-name"></span>, 
+                पुत्र/पुत्री/श्री <span class="fatherName-preview blank-line mw-father"></span>, 
+                उम्र <span class="age-preview blank-line mw-age"></span> वर्ष, 
+                व्यवसाय <span class="occupation-preview blank-line mw-occ"></span>, 
+                निवासी <span class="address-preview blank-line mw-addr"></span> 
+                प्रमाणित करते हुये घोषणा करता/करती हूँ कि आवेदन पत्र में दिये गये विवरण / तथ्य मेरी व्यक्तिगत जानकारी एवं विश्वास में शुद्ध एवं सत्य हैं। मैं मिथ्या विवरणों / तथ्यों को देने के परिणामों से भली-भाँति अवगत हूँ । यदि आवेदन पत्र में दिये गये कोई विवरण / तथ्य मिथ्या पाये जाते हैं, तो मैं, मेरे विरूद्ध भा०द०वि० 1960 की धारा-199 व 200 एवं प्रभावी किसी अन्य विधि के अंतर्गत अभियोजन एवं दण्ड के लिये, स्वयं उत्तरदायी होऊँगा / होऊँगी।
+            </div>
+
+            <!-- Document Footer pushed to bottom using mt-auto -->
+            <div class="flex justify-between s-mt-12 s-text-base mt-auto">
+                
+                <!-- Left Side: Place & Date -->
+                <div class="flex flex-col s-gap-4">
+                    <div>स्थान: <span class="place-preview blank-line mw-place"></span></div>
+                    <div>दिनॉक: <span class="date-preview blank-line mw-place"></span></div>
+                </div>
+
+                <!-- Right Side: Signature & Name -->
+                <div class="flex flex-col items-center">
+                    <div class="s-sign-box">
+                        <img id="signature-preview-img" src="" class="s-sign-img hidden" alt="Signature" />
+                        <span id="signature-placeholder" class="text-gray-400 s-text-sm absolute bottom-1">हस्ताक्षर यहाँ</span>
+                    </div>
+                    <div class="s-mt-2">आवेदक/आवेदिका के हस्ताक्षर</div>
+                    <div class="s-mt-2 text-center w-full">
+                        आवेदक/आवेदिका का नाम:<br/>
+                        <span class="applicantName-preview blank-line mw-name s-mt-2"></span>
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification (Replaces native alerts) -->
+    <div id="toast" class="fixed bottom-6 right-6 bg-gray-900 text-white px-6 py-3 rounded-lg shadow-2xl transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none z-50 font-medium">
+        Notification message
+    </div>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // 1. Array mapping input field IDs to their live preview classes
+        const textFields = ['applicantName', 'fatherName', 'age', 'occupation', 'address', 'place'];
+        
+        // 2. Attach Input Event Listeners for Live Text Updates
+        textFields.forEach(field => {
+            document.getElementById(field).addEventListener('input', function() {
+                const value = this.value;
+                const previewElements = document.querySelectorAll(`.${field}-preview`);
+                previewElements.forEach(el => {
+                    el.textContent = value;
+                });
+            });
+        });
+
+        // 3. Format Date specially for Indian Context (DD/MM/YYYY)
+        document.getElementById('date').addEventListener('input', function() {
+            const val = this.value; // Receives format YYYY-MM-DD
+            let displayVal = val;
+            if (val) {
+                const parts = val.split('-');
+                if(parts.length === 3) {
+                    displayVal = `${parts[2]}/${parts[1]}/${parts[0]}`;
+                }
+            }
+            document.querySelectorAll('.date-preview').forEach(el => {
+                el.textContent = displayVal;
+            });
+        });
+
+        // 4. Handle Signature Image Upload & Display
+        document.getElementById('signatureFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const nameDisplay = document.getElementById('file-name-display');
+            const imgEl = document.getElementById('signature-preview-img');
+            const placeholderEl = document.getElementById('signature-placeholder');
+
+            if (file) {
+                nameDisplay.textContent = 'Selected: ' + file.name;
+                nameDisplay.classList.remove('hidden');
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imgEl.src = e.target.result;
+                    imgEl.classList.remove('hidden');
+                    placeholderEl.classList.add('hidden');
+                }
+                reader.readAsDataURL(file);
+            } else {
+                // Revert to default if canceled
+                nameDisplay.classList.add('hidden');
+                imgEl.classList.add('hidden');
+                imgEl.src = '';
+                placeholderEl.classList.remove('hidden');
+            }
+        });
+
+        // 5. Custom Toast UI (Avoids disruptive browser alert dialogs)
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3500);
+        }
+
+        // 6. Generate and Download PDF using html2pdf.js
+        function downloadPDF() {
+            const element = document.getElementById('document-preview-content');
+            const placeholder = document.getElementById('signature-placeholder');
+            const btn = document.getElementById('download-btn');
+            
+            // Check if placeholder is currently visible, if so, hide it for a clean printed document
+            const wasVisible = !placeholder.classList.contains('hidden');
+            if (wasVisible) placeholder.classList.add('hidden');
+
+            // Force container width temporarily to standard A4 pixels to guarantee crisp PDF on mobile devices
+            const originalWidth = element.style.width;
+            element.style.width = '794px';
+
+            // Configure html2pdf parameters
+            const opt = {
+                margin:       0, // Margins handled natively by CSS padding scaling
+                filename:     'Swapramanit_Ghosna_Patra.pdf',
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true }, 
+                jsPDF:        { unit: 'px', format: [794, 1123], orientation: 'portrait' } 
+            };
+
+            // UI Button State: Loading
+            const originalBtnContent = btn.innerHTML;
+            btn.innerHTML = `<svg class="animate-spin h-5 w-5 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> <span class="ml-2">Generating PDF...</span>`;
+            btn.disabled = true;
+
+            // Generate
+            html2pdf().set(opt).from(element).save().then(() => {
+                // Restoration logic
+                if (wasVisible) placeholder.classList.remove('hidden');
+                
+                // Revert container width styling
+                element.style.width = originalWidth || '100%';
+                
+                // Restore button
+                btn.innerHTML = originalBtnContent;
+                btn.disabled = false;
+                
+                showToast('✅ PDF Downloaded Successfully!');
+            }).catch(error => {
+                console.error("PDF Generation Error:", error);
+                showToast('❌ Error generating PDF. Please try again.');
+                btn.innerHTML = originalBtnContent;
+                btn.disabled = false;
+                element.style.width = originalWidth || '100%';
+            });
+        }
+    </script>
+</body>
+</html>
